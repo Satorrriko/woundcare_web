@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato&display=swap');
+
+
+/* Reset CSS */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Lato', sans-serif;
+}
+
+.PatientContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px; /* Optional: Add margin space at the top */
+}
+
+.PatientInfo {
+  margin-bottom: 20px; /* Optional: Add margin space between each patient information */
+}
+
+.PatientInfo p {
+  margin: 5px 0; /* Optional: Adjust margin for paragraphs */
+}
+
+.PatientImages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.PatientImages img {
+  margin: 5px; /* Optional: Add margin space around each image */
+}
+
+.home,
+.reports,
+.products,
+.team,
+.reports
+.select  {
+  display: flex;
+  height: 90vh;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
