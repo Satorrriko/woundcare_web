@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import AWS from 'aws-sdk';
 import styled from 'styled-components';
+import CaseCard from '../components/CaseCard';
 
-// Styled components for modal
+// Styled components for modal (保持不变)
 const ModalBackdrop = styled.div`
   position: fixed;
   top: 0;
@@ -22,8 +23,12 @@ const ModalContent = styled.div`
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
 `;
 
+// AWS configuration
 const AWSConfig = {
   region: 'ap-southeast-2',
   credentials: new AWS.Credentials(
@@ -37,12 +42,12 @@ const s3 = new AWS.S3();
 
 function Patient() {
   const { patientId } = useParams();
-  const [patient, setPatient] = useState(null);
+  const [patients, setPatients] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     fetchImages();
-  });  // Ensure re-fetching when patientId changes
+  }, [patientId]);
 
   const fetchImages = async () => {
     const params = {
@@ -60,9 +65,9 @@ function Patient() {
       );
 
       const urls = await Promise.all(urlsPromises);
-      const patients = processPatientData(data.Contents, urls);
+      const processedPatients = processPatientData(data.Contents, urls);
 
-      setPatient(patients[patientId]);
+      setPatients(processedPatients);
     } catch (err) {
       console.error('Error fetching files:', err);
     }
@@ -73,24 +78,26 @@ function Patient() {
       const relativePath = file.Key.replace('images/', '');
       const parts = relativePath.split('_');
       const pId = parts[0];
-      const position = parts[1];
-      const datePart = parts[2];
-      const timePart = parts[3];
-      const date = `${datePart.substring(0, 8)}`;
-      const time = `${timePart.substring(0, 6)}`;
+      const uuid = parts[1];
+      const position = parts[2];
+      const datePart = parts[3];
+      const timePart = parts[4];
+      const date = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
+      const time = timePart;
 
       if (!acc[pId]) {
-        acc[pId] = { id: pId, positions: {} };
+        acc[pId] = { id: pId, cases: {} };
       }
-      if (!acc[pId].positions[position]) {
-        acc[pId].positions[position] = [];
+      if (!acc[pId].cases[uuid]) {
+        acc[pId].cases[uuid] = [];
       }
 
-      acc[pId].positions[position].push({
+      acc[pId].cases[uuid].push({
         name: file.Key,
         url: urls[index],
-        date: `${date.slice(6, 8)}/${date.slice(4, 6)}/${date.slice(0, 4)}`,
-        time: `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`,
+        position,
+        date,
+        time,
       });
 
       return acc;
@@ -102,40 +109,24 @@ function Patient() {
   return (
     <div className="PatientContainer">
       <h1>Patient Information</h1>
-      <br />
-      {patient ? (
-        <div className="PatientInfo">
-          <h2>PatientID: {patient.id}</h2>
-          <br />
-          {Object.entries(patient.positions).map(([position, images]) => (
-            <div key={position}>
-              <h3>+ {position}</h3>
-              <br />
-              <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-                {images.map((img, index) => (
-                  <div key={index}>
-                    <img src={img.url} alt={`${position} on ${img.date} at ${img.time}`}
-                         onClick={() => setSelectedImage(img)}
-                         style={{ width: '100px', height: 'auto' }} />
-                    <p>Date: {img.date}</p>
-                    <p>Time: {img.time}</p>
-                    <br />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No patient data available.</p>
-      )}
+      {Object.entries(patients).map(([id, patientData]) => (
+        Object.entries(patientData.cases).map(([uuid, images]) => (
+          <CaseCard
+            key={`${id}-${uuid}`}
+            patientId={id}
+            images={images}
+            onImageClick={setSelectedImage}
+          />
+        ))
+      ))}
 
       {selectedImage && (
         <ModalBackdrop onClick={closeModal}>
           <ModalContent onClick={e => e.stopPropagation()}>
-            <img src={selectedImage.url} alt="Selected" style={{ width: '600px', height: 'auto' }} />
+            <img src={selectedImage.url} alt="Selected" style={{ maxWidth: '100%', height: 'auto' }} />
             <p>Date: {selectedImage.date}</p>
             <p>Time: {selectedImage.time}</p>
+            <p>Position: {selectedImage.position}</p>
             <button onClick={closeModal}>Close</button>
           </ModalContent>
         </ModalBackdrop>
