@@ -4,30 +4,6 @@ import AWS from 'aws-sdk';
 import styled from 'styled-components';
 import CaseCard from '../components/CaseCard';
 
-// Styled components for modal (保持不变)
-const ModalBackdrop = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-`;
-
-const ModalContent = styled.div`
-  background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-  max-width: 90%;
-  max-height: 90%;
-  overflow: auto;
-`;
-
 // AWS configuration
 const AWSConfig = {
   region: 'ap-southeast-2',
@@ -39,6 +15,16 @@ const AWSConfig = {
 
 AWS.config.update(AWSConfig);
 const s3 = new AWS.S3();
+
+const PatientContainer = styled.div`
+  padding: 20px;
+  margin: 0 40%
+`;
+
+const Title = styled.h1`
+  color: #333;
+  margin-bottom: 20px;
+`;
 
 function Patient() {
   const { patientId } = useParams();
@@ -104,34 +90,25 @@ function Patient() {
     }, {});
   };
 
-  const closeModal = () => setSelectedImage(null);
+  // Filter patient data based on the current patientId
+  const currentPatient = patients[patientId];
 
   return (
-    <div className="PatientContainer">
-      <h1>Patient Information</h1>
-      {Object.entries(patients).map(([id, patientData]) => (
-        Object.entries(patientData.cases).map(([uuid, images]) => (
+    <PatientContainer>
+      <Title>Patient Information: {patientId}</Title>
+      {currentPatient ? (
+        Object.entries(currentPatient.cases).map(([uuid, images]) => (
           <CaseCard
-            key={`${id}-${uuid}`}
-            patientId={id}
+            key={`${patientId}-${uuid}`}
+            patientId={patientId}
             images={images}
             onImageClick={setSelectedImage}
           />
         ))
-      ))}
-
-      {selectedImage && (
-        <ModalBackdrop onClick={closeModal}>
-          <ModalContent onClick={e => e.stopPropagation()}>
-            <img src={selectedImage.url} alt="Selected" style={{ maxWidth: '100%', height: 'auto' }} />
-            <p>Date: {selectedImage.date}</p>
-            <p>Time: {selectedImage.time}</p>
-            <p>Position: {selectedImage.position}</p>
-            <button onClick={closeModal}>Close</button>
-          </ModalContent>
-        </ModalBackdrop>
+      ) : (
+        <p>No data available for this patient.</p>
       )}
-    </div>
+    </PatientContainer>
   );
 }
 
