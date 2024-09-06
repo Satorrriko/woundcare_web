@@ -25,15 +25,40 @@ const ModalContent = styled.div`
 
 const GalleryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+`;
+
+const ImageCard = styled.div`
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+`;
+
+const ThumbnailContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 200px;
 `;
 
 const ThumbnailImage = styled.img`
   width: 100%;
-  height: 150px;
+  height: 100%;
   object-fit: cover;
-  cursor: pointer;
+`;
+
+const ThumbnailSvgOverlay = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const ImageInfo = styled.div`
+  padding: 10px;
 `;
 
 const EnlargedImageContainer = styled.div`
@@ -44,15 +69,37 @@ const EnlargedImageContainer = styled.div`
   height: 100%;
   background-color: rgba(0, 0, 0, 0.8);
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 1100;
 `;
 
-const EnlargedImage = styled.img`
+const EnlargedImageWrapper = styled.div`
+  position: relative;
   max-width: 90%;
-  max-height: 90%;
+  max-height: 80%;
+`;
+
+const EnlargedBaseImage = styled.img`
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
+`;
+
+const EnlargedSvgOverlay = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+`;
+
+const EnlargedImageInfo = styled.div`
+  color: white;
+  margin-top: 20px;
+  text-align: center;
 `;
 
 const CloseButton = styled.button`
@@ -82,19 +129,34 @@ const ImageGalleryModal = ({ images, onClose }) => {
         <h2>Image Gallery</h2>
         <GalleryGrid>
           {images.map((image, index) => (
-            <ThumbnailImage
-              key={index}
-              src={image.url}
-              alt={`Wound image ${index + 1}`}
-              onClick={() => handleImageClick(image)}
-            />
+            <ImageCard key={index} onClick={() => handleImageClick(image)}>
+              <ThumbnailContainer>
+                <ThumbnailImage src={image.jpg} alt={`Wound image ${index + 1}`} />
+                <ThumbnailSvgOverlay src={image.svg} alt={`SVG overlay ${index + 1}`} />
+              </ThumbnailContainer>
+              <ImageInfo>
+                <p>Date: {image.date}</p>
+                <p>Time: {image.time}</p>
+                <p>Area: {image.area}</p>
+              </ImageInfo>
+            </ImageCard>
           ))}
         </GalleryGrid>
       </ModalContent>
       {enlargedImage && (
         <EnlargedImageContainer onClick={closeEnlargedImage}>
-          <EnlargedImage src={enlargedImage.url} alt="Enlarged wound image" />
-          <CloseButton onClick={closeEnlargedImage}>&times;</CloseButton>
+          <EnlargedImageWrapper>
+            <EnlargedBaseImage src={enlargedImage.jpg} alt="Enlarged wound image" />
+            <EnlargedSvgOverlay src={enlargedImage.svg} alt="Enlarged SVG overlay" />
+          </EnlargedImageWrapper>
+          <EnlargedImageInfo>
+            <p>Date: {enlargedImage.date}</p>
+            <p>Time: {enlargedImage.time}</p>
+            <p>Area: {enlargedImage.area}</p>
+            <p>Case ID: {enlargedImage.caseId}</p>
+            <p>Position: {enlargedImage.position}</p>
+          </EnlargedImageInfo>
+          <CloseButton onClick={(e) => { e.stopPropagation(); closeEnlargedImage(); }}>&times;</CloseButton>
         </EnlargedImageContainer>
       )}
     </ModalBackdrop>

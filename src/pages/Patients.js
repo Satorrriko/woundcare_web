@@ -8,8 +8,8 @@ import CaseCard from '../components/CaseCard';
 const AWSConfig = {
   region: 'ap-southeast-2',
   credentials: new AWS.Credentials(
-    'AKIAYS2NUYPMDSPH6MHI',
-    'AseuJMIvygKw4D8Nl/NvFP36O1hc9XuTstaYly/z'
+    'AKIAQKGGXM7RYAIFTVDD',
+    'vGN7vNDPgjg1wwGYEJ2FdhysUe0s+XH9vtU25gwA'
   ),
 };
 
@@ -37,7 +37,7 @@ function Patient() {
 
   const fetchImages = async () => {
     const params = {
-      Bucket: 'woundcareapp',
+      Bucket: 'test12345464',
     };
 
     try {
@@ -63,11 +63,16 @@ function Patient() {
     return contents.reduce((acc, file, index) => {
       const relativePath = file.Key.replace('images/', '');
       const parts = relativePath.split('_');
+      if (parts.length !== 6) {
+        return acc;
+      }
       const pId = parts[0];
       const uuid = parts[1];
       const position = parts[2];
       const datePart = parts[3];
       const timePart = parts[4];
+      const areaPart = parts[5].replace('.jpg', '').replace('area', '').replace('.svg', '');
+      const fileExtension = file.Key.split('.').pop();
       const date = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
       const time = timePart;
 
@@ -84,6 +89,7 @@ function Patient() {
         position,
         date,
         time,
+        area: areaPart,
       });
 
       return acc;

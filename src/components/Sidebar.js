@@ -13,8 +13,8 @@ import React, { useState, useEffect } from 'react';
 AWS.config.update({
   region: 'ap-southeast-2', // Replace with your bucket's region
   credentials: new AWS.Credentials(
-    'AKIAYS2NUYPMDSPH6MHI',
-    'AseuJMIvygKw4D8Nl/NvFP36O1hc9XuTstaYly/z'
+    'AKIAQKGGXM7RYAIFTVDD',
+    'vGN7vNDPgjg1wwGYEJ2FdhysUe0s+XH9vtU25gwA'
   ),
 });
 
@@ -65,7 +65,7 @@ const Sidebar = () => {
 
   const fetchPatientIds = async () => {
     const params = {
-      Bucket: 'woundcareapp',
+      Bucket: 'test12345464',
     };
 
     try {

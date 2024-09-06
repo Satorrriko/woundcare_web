@@ -84,40 +84,84 @@ const DetailButton = styled.button`
   }
 `;
 
+const ImageOverlay = styled.div`
+  position: relative;
+  width: 150px;
+  height: 150px;
+`;
+
+const BaseImage = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+`;
+
+const SvgOverlay = styled.img`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+`;
+
 const parseImageInfo = (fileName) => {
   const parts = fileName.split('_');
   return {
-    caseId: `${parts[1]}`,
-    position: `${parts[2]}`,
-    date: `${parts[3]}`,
-    time: `${parts[4]}`
+    caseId: parts[1],
+    position: parts[2],
+    date: parts[3],
+    time: parts[4],
+    area: parts[5].replace('.jpg', '').replace('area', '').replace('.svg', ''),
+    fileExtension: parts[5].split('.').pop()
   };
 };
 
 const CaseCard = ({ patientId, images, onDetailClick }) => {
   const [showGallery, setShowGallery] = useState(false);
 
+  const processedImages = useMemo(() => {
+    const imageMap = new Map();
+    images.forEach(img => {
+      const info = parseImageInfo(img.name);
+      const key = `${info.caseId}_${info.date}_${info.time}`;
+      if (!imageMap.has(key)) {
+        imageMap.set(key, { ...info, jpg: null, svg: null });
+      }
+      if (info.fileExtension === 'jpg') {
+        imageMap.get(key).jpg = img.url;
+      } else if (info.fileExtension === 'svg') {
+        imageMap.get(key).svg = img.url;
+      }
+    });
+    return Array.from(imageMap.values());
+  }, [images]);
+
   const sortedImages = useMemo(() => 
-    [...images].sort((a, b) => new Date(b.date) - new Date(a.date)),
-    [images]
+    [...processedImages].sort((a, b) => new Date(b.date) - new Date(a.date)),
+    [processedImages]
   );
 
   const chartData = useMemo(() => 
     sortedImages.map((img) => ({
       date: img.date,
-      value: Math.floor(Math.random() * 100) // Replace with actual progress data
+      area: img.area
     })),
     [sortedImages]
   );
 
   const progress = useMemo(() => {
-    const lastValue = chartData[chartData.length - 1]?.value;
-    const firstValue = chartData[0]?.value;
-    return firstValue ? Math.round((lastValue / firstValue) * 100) : 0;
+    const lastValue = chartData[chartData.length - 1]?.area;
+    const firstValue = chartData[0]?.area;
+    return firstValue ? Math.round((1 - lastValue / firstValue) * 100) : 0;
   }, [chartData]);
 
   const latestImage = sortedImages[0];
-  const latestImageInfo = latestImage ? parseImageInfo(latestImage.name) : null;
 
   const handleShowDetails = () => {
     setShowGallery(true);
@@ -131,7 +175,7 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
     <CardContainer>
       <CardHeader>
         <PatientId>ID: {patientId}</PatientId>
-        <patientId>Position: {latestImageInfo ? latestImageInfo.position : 'N/A'}</patientId>
+        <PatientId>Position: {latestImage ? latestImage.position : 'N/A'}</PatientId>
         <Progress>Progress: {progress}%</Progress>
       </CardHeader>
       <Divider />
@@ -142,25 +186,25 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#8884d8" />
+              <Line type="monotone" dataKey="area" stroke="#8884d8" />
             </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
         <ImageContainer>
           {latestImage && (
-            <ImagePreview 
-              src={latestImage.url} 
-              alt="Latest wound image"
-            />
+            <ImageOverlay>
+              <BaseImage src={latestImage.jpg} alt="Latest wound image" />
+              <SvgOverlay src={latestImage.svg} alt="SVG overlay" />
+            </ImageOverlay>
           )}
         </ImageContainer>
       </CardContent>
       <CardFooter>
         <Timestamp>
-          Last update: {latestImageInfo ? `${latestImageInfo.date} ${latestImageInfo.time}` : 'N/A'}
+          Last update: {latestImage ? `${latestImage.date} ${latestImage.time}` : 'N/A'}
         </Timestamp>
         <Timestamp>
-          {latestImageInfo ? `Case ID: ${latestImageInfo.caseId}` : 'N/A'}
+          {latestImage ? `Case ID: ${latestImage.caseId}` : 'N/A'}
         </Timestamp>
         <DetailButton onClick={handleShowDetails}>
           Show Details
