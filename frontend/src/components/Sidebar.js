@@ -1,24 +1,13 @@
+// frontend/src/components/Sidebar.js
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import * as FaIcons from 'react-icons/fa';
 import * as AiIcons from 'react-icons/ai';
+import { IconContext } from 'react-icons/lib';
 import { SidebarData } from './SidebarData';
 import SubMenu from './SubMenu';
-import { IconContext } from 'react-icons/lib';
-import AWS from 'aws-sdk';
-import React, { useState, useEffect } from 'react';
-
-
-// Configure the AWS SDK with your credentials and region
-AWS.config.update({
-  region: 'ap-southeast-2', // Replace with your bucket's region
-  credentials: new AWS.Credentials(
-    'AKIAQKGGXM7RYAIFTVDD',
-    'vGN7vNDPgjg1wwGYEJ2FdhysUe0s+XH9vtU25gwA'
-  ),
-});
-
-const s3 = new AWS.S3();
+import { apiService } from '../services/api';
 
 const Nav = styled.div`
   background: #15171c;
@@ -54,33 +43,36 @@ const SidebarWrap = styled.div`
   width: 100%;
 `;
 
+const LoadingMessage = styled.div`
+  color: white;
+  padding: 20px;
+  text-align: center;
+`;
+
+// frontend/src/components/Sidebar.js
+// ... (previous imports remain the same)
+
 const Sidebar = () => {
   const [sidebar, setSidebar] = useState(true);
   const [sidebarData, setSidebarData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchPatientIds();
-    setSidebarData(SidebarData());
-  }, []);  // No dependency to fetch only on component mount
+    fetchPatients();
+  }, []);
 
-  const fetchPatientIds = async () => {
-    const params = {
-      Bucket: 'test12345464',
-    };
-
+  const fetchPatients = async () => {
     try {
-      const data = await s3.listObjectsV2(params).promise();
-
-      const patients = data.Contents.reduce((ac, file) => {
-        const relativePath = file.Key.replace('images/', '');
-        const parts = relativePath.split('_');
-        const pId = parts[0];
-        ac.add(pId);
-        return ac;
-    }, new Set());
-      localStorage.setItem('patientIds', JSON.stringify(Array.from(patients)));
-    } catch (err) {
-      console.error('Error fetching files:', err);
+      const patientIds = await apiService.getPatients();
+      // 直接存储患者ID数组
+      localStorage.setItem('patientIds', JSON.stringify(patientIds));
+      setSidebarData(SidebarData());
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+      localStorage.setItem('patientIds', JSON.stringify([]));
+      setSidebarData(SidebarData());
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,9 +91,13 @@ const Sidebar = () => {
             <NavIcon to='#'>
               <AiIcons.AiOutlineClose onClick={showSidebar} />
             </NavIcon>
-            {sidebarData.map((item, index) => {
-              return <SubMenu item={item} key={index} />;
-            })}
+            {loading ? (
+              <LoadingMessage>Loading...</LoadingMessage>
+            ) : (
+              sidebarData.map((item, index) => {
+                return <SubMenu item={item} key={index} />;
+              })
+            )}
           </SidebarWrap>
         </SidebarNav>
       </IconContext.Provider>
