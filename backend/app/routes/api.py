@@ -4,6 +4,7 @@ from app.utils.s3_helper import S3Helper
 from ..config import Config as Config
 from app.utils.wound_detector import ReferenceMarkerDetector
 from PIL import Image
+import base64
 
 api = Blueprint('api', __name__)
 marker_detector = ReferenceMarkerDetector()
@@ -46,43 +47,52 @@ def get_patient_data(patient_id):
     
 @api.route('/detect-marker', methods=['POST'])
 def detect_marker():
-    """检测绿色圆形标记并返回结果"""
-    try:
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image file'}), 400
-            
-        image_file = request.files['image']
+ #   try:
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'No image file'})
         
-        # 读取图片数据
-        image_bytes = image_file.read()
+    image_file = request.files['image']
+    image_bytes = image_file.read()
         
-        # 获取原始图片尺寸
-        image = Image.open(io.BytesIO(image_bytes))
-        width, height = image.size
-        
-        # 检测标记
-        result = marker_detector.detect_from_bytes(image_bytes)
-        
-        if not result:
-            return jsonify({
-                'success': False,
-                'error': 'No green circular marker detected'
-            }), 400
-            
-        # 创建SVG
-        svg_string = marker_detector.create_svg_string(result, width, height)
-        
-        # 返回结果
-        return jsonify({
-            'success': True,
-            'result': {
-                'svg_path': result['svg_path'],
-                'area': result['area'],
-                'center': result['center'],
-                'circularity': result['circularity'],
+    # 获取原始图片尺寸
+    image = Image.open(io.BytesIO(image_bytes))
+    width, height = image.size
+    print(width, height)
+    # 检测创伤边缘
+    result = marker_detector.detect_from_bytes(image_bytes)
+    print(result)
+    
+    if not result:
+        print('No marker detected')
+        return jsonify({'success': False, 'error': 'No marker detected'})
+    
+    # 格式化返回数据，确保所有数值都是数字
+    circle_data = {
+        'success': True,
+        'result': {
+            'center': {
+                'x': float(result['center']['x']),
+                'y': float(result['center']['y'])
             },
-            'svg': svg_string
-        })
+            'radius': float(result['radius']) if 'radius' in result else 5.0,
+            'area': float(result['area']),
+            'svg_path': result['svg_path'],
+            'circularity': float(result['circularity'])  
+        }
+    }
+    print(circle_data)
+    return jsonify(circle_data)
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+#    except Exception as e:
+#        print(e)
+#        print('Error api detect marker')
+#        return jsonify({'success': False, 'error': str(e)})
+
+import base64
+@api.route('/view', methods=['GET'])
+def view():
+    # 返回detect_results/detection_process.png显示在网页上
+    image_url = 'detection_results/detection_process.png'
+    base64_image = base64.b64encode(open(image_url, 'rb').read()).decode('utf-8')
+    image = f'<img src="data:image/png;base64,{base64_image}">'
+    return image

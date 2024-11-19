@@ -1,5 +1,5 @@
 // frontend/src/services/api.js
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://3.25.71.234:5000/api';
 
 export const apiService = {
   // 获取所有患者列表

@@ -143,7 +143,7 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
   }, [images]);
 
   const sortedImages = useMemo(() => 
-    [...processedImages].sort((a, b) => new Date(b.date) - new Date(a.date)),
+    [...processedImages].sort((a, b) => (String(b.date)+String(b.time)) - (String(a.date)+String(a.time))),
     [processedImages]
   );
 
@@ -156,8 +156,8 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
   );
 
   const progress = useMemo(() => {
-    const lastValue = chartData[chartData.length - 1]?.area;
-    const firstValue = chartData[0]?.area;
+    const lastValue = chartData[0]?.area;
+    const firstValue = chartData[chartData.length - 1]?.area;
     return firstValue ? Math.round((1 - lastValue / firstValue) * 100) : 0;
   }, [chartData]);
 
@@ -182,7 +182,7 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
       <CardContent>
         <ChartContainer>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData.reverse()}>
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />

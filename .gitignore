@@ -1,2 +1,5 @@
 
 /.venv
+/backend/app/__pycache__
+/backend/app/utils/__pycache__
+/backend/app/routes/__pycache__
