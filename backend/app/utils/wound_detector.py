@@ -7,42 +7,42 @@ import os
 import matplotlib.pyplot as plt
 class ReferenceMarkerDetector:
     def __init__(self):
-        # HSV范围：绿色标记
-        self.lower_green = np.array([30, 20, 20])  # HSV绿色的低阈值
-        self.upper_green = np.array([90, 255, 255])  # HSV绿色的高阈值
+        # threshold values for green color in HSV
+        self.lower_green = np.array([30, 20, 20])  # low
+        self.upper_green = np.array([90, 255, 255])  # high
         
-        # 创建结果保存目录
+        # create results directory
         self.results_dir = 'detection_results'
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
     def detect_from_bytes(self, image_bytes):
-        """从字节数据中检测绿色圆形标记"""
-        # 将字节转换为图像
+        """detect the green circular marker in the image bytes"""
+        # convert image bytes to numpy array
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         return self.detect(img, debug=False)
     
     def detect(self, img, debug=False):
-        """检测图像中的绿色圆形标记"""
-        # 创建调试图像集合
+        """detect the green circular marker in the image"""
+        # create a dictionary to store debug images
         debug_images = {}
         debug_images['original'] = img.copy()
         
-        # 转换到HSV色彩空间
+        # convert image to HSV
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         debug_images['hsv'] = hsv.copy()
         
-        # 创建绿色掩码
+        # create a mask for green color
         green_mask = cv2.inRange(hsv, self.lower_green, self.upper_green)
         debug_images['green_mask'] = green_mask.copy()
         
-        # 形态学操作以去除噪声
+        # morphology operations
         kernel = np.ones((10,10), np.uint8)
         green_mask = cv2.morphologyEx(green_mask, cv2.MORPH_OPEN, kernel)
         green_mask = cv2.morphologyEx(green_mask, cv2.MORPH_CLOSE, kernel)
         debug_images['morphology'] = green_mask.copy()
         
-        # 找到轮廓
+        # find contours
         contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if not contours:
@@ -50,7 +50,7 @@ class ReferenceMarkerDetector:
                 self._save_debug_images(debug_images)
             return None
             
-        # 找到最圆的轮廓
+        # find the best contour based on circularity
         best_contour = None
         best_circularity = 0
         best_metrics = {}
@@ -82,11 +82,11 @@ class ReferenceMarkerDetector:
                 self._save_debug_images(debug_images)
             return None
         
-        # 绘制最佳轮廓
+        # draw the best contour
         result_img = img.copy()
         cv2.drawContours(result_img, [best_contour], -1, (0, 255, 0), 2)
         
-        # 拟合椭圆或圆形
+        # fit an ellipse or circle to the contour
         if len(best_contour) >= 5:
             (x, y), (MA, ma), angle = cv2.fitEllipse(best_contour)
             cv2.ellipse(result_img, ((x,y), (MA,ma), angle), (255, 0, 0), 2)
@@ -113,22 +113,22 @@ class ReferenceMarkerDetector:
         }
 
     def _save_debug_images(self, images, metrics=None):
-        """保存调试图像"""
+        """save the debug images to a file (for debugging purposes)"""
         plt.figure(figsize=(20, 10))
         print("original")
-        # 原始图像
+        # original image
         plt.subplot(231)
         plt.imshow(cv2.cvtColor(images['original'], cv2.COLOR_BGR2RGB))
         plt.title('Original Image')
         plt.axis('off')
         print("hsv")
-        # HSV图像
+        # HSV image
         plt.subplot(232)
         plt.imshow(images['hsv'])
         plt.title('HSV Image')
         plt.axis('off')
         print("mask")
-        # 绿色掩码
+        # green mask
         plt.subplot(233)
         plt.imshow(images['green_mask'], cmap='gray')
         plt.title('Green Mask')

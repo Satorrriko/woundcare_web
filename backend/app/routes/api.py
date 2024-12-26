@@ -11,12 +11,12 @@ marker_detector = ReferenceMarkerDetector()
 
 @api.route('/patients', methods=['GET'])
 def get_patients():
-    """获取所有患者列表"""
+    """get the list of patients"""
     try:
         s3_helper = S3Helper(Config)
         contents = s3_helper.list_objects()
         
-        # 提取唯一的患者ID
+        # get all patient IDs
         patient_ids = set()
         for file in contents:
             key = file['Key']
@@ -30,15 +30,15 @@ def get_patients():
 
 @api.route('/patients/<patient_id>', methods=['GET'])
 def get_patient_data(patient_id):
-    """获取特定患者的所有数据"""
+    """get the data for a specific patient"""
     try:
         s3_helper = S3Helper(Config)
         contents = s3_helper.list_objects()
         
-        # 处理所有文件数据
+        # process the file data
         all_patient_data = s3_helper.process_file_data(contents)
         
-        # 获取特定患者的数据
+        # get the data for the specific patient
         patient_data = all_patient_data.get(patient_id, {'cases': {}})
         
         return jsonify(patient_data)
@@ -54,11 +54,11 @@ def detect_marker():
     image_file = request.files['image']
     image_bytes = image_file.read()
         
-    # 获取原始图片尺寸
+    # get the image size
     image = Image.open(io.BytesIO(image_bytes))
     width, height = image.size
     print(width, height)
-    # 检测创伤边缘
+    # detect the marker
     result = marker_detector.detect_from_bytes(image_bytes)
     print(result)
     
@@ -66,7 +66,7 @@ def detect_marker():
         print('No marker detected')
         return jsonify({'success': False, 'error': 'No marker detected'})
     
-    # 格式化返回数据，确保所有数值都是数字
+    # return the result
     circle_data = {
         'success': True,
         'result': {
@@ -91,7 +91,7 @@ def detect_marker():
 import base64
 @api.route('/view', methods=['GET'])
 def view():
-    # 返回detect_results/detection_process.png显示在网页上
+    # return the image from detect_results/detection_process.png
     image_url = 'detection_results/detection_process.png'
     base64_image = base64.b64encode(open(image_url, 'rb').read()).decode('utf-8')
     image = f'<img src="data:image/png;base64,{base64_image}">'

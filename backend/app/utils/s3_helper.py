@@ -13,7 +13,7 @@ class S3Helper:
         self.bucket = config.S3_BUCKET
 
     def list_objects(self):
-        """列出存储桶中的所有对象"""
+        """list all objects in the S3 bucket"""
         try:
             response = self.s3_client.list_objects_v2(Bucket=self.bucket)
             return response.get('Contents', [])
@@ -22,7 +22,7 @@ class S3Helper:
             return []
 
     def get_presigned_url(self, key, expires_in=300):
-        """生成预签名URL"""
+        """generate a presigned URL for the given key"""
         try:
             url = self.s3_client.generate_presigned_url(
                 'get_object',
@@ -38,16 +38,16 @@ class S3Helper:
             return None
 
     def process_file_data(self, contents):
-        """处理S3文件数据，组织成前端需要的格式"""
+        """process the file data and return a dictionary of patient data"""
         patient_data = {}
         
         for file in contents:
             key = file['Key']
-            # 跳过非图片文件
+            # only process image files
             if not (key.endswith('.jpg') or key.endswith('.svg')):
                 continue
 
-            # 解析文件名
+            # extract the patient ID, case ID, position, date, time, and area from the key
             parts = key.replace('images/', '').split('_')
             if len(parts) < 6:
                 continue
@@ -59,19 +59,19 @@ class S3Helper:
             time = parts[4]
             area_part = parts[5]
 
-            # 格式化日期和时间
+            # format the date and time
             formatted_date = f"{date[:4]}-{date[4:6]}-{date[6:]}"
             formatted_time = f"{time[:2]}:{time[2:4]}:{time[4:]}"
             
-            # 提取area值
+            # extract the area from the filename
             area = area_part.replace('.jpg', '').replace('.svg', '').replace('area', '')
 
-            # 生成预签名URL
+            # get the presigned URL
             url = self.get_presigned_url(key)
             if not url:
                 continue
 
-            # 组织数据结构
+            # add the data to the patient dictionary
             if patient_id not in patient_data:
                 patient_data[patient_id] = {'cases': {}}
 
@@ -81,7 +81,7 @@ class S3Helper:
                     'images': []
                 }
 
-            # 添加图片信息
+            # add the image data
             patient_data[patient_id]['cases'][case_id]['images'].append({
                 'name': key.replace('images/', ''),
                 'url': url,

@@ -43,12 +43,14 @@ const CardContent = styled.div`
 
 const ChartContainer = styled.div`
   flex: 1;
-  height: 200px;
+  height: 250px;
+  margin-bottom: 20px;
 `;
 
 const ImageContainer = styled.div`
   width: 150px;
   height: 150px;
+  flex-shrink: 0;
 `;
 
 const ImagePreview = styled.img`
@@ -122,6 +124,10 @@ const parseImageInfo = (fileName) => {
   };
 };
 
+const formatTimestamp = (date, time) => {
+  return `${date.slice(0,4)}/${date.slice(4,6)}/${date.slice(6,8)} ${time.slice(0,2)}:${time.slice(2,4)}`;
+};
+
 const CaseCard = ({ patientId, images, onDetailClick }) => {
   const [showGallery, setShowGallery] = useState(false);
 
@@ -142,26 +148,29 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
     return Array.from(imageMap.values());
   }, [images]);
 
-  const sortedImages = useMemo(() => 
-    [...processedImages].sort((a, b) => (String(b.date)+String(b.time)) - (String(a.date)+String(a.time))),
+  const sortedImages = useMemo(() =>
+    [...processedImages].sort((a, b) => 
+      (String(a.date) + String(a.time)) - (String(b.date) + String(b.time))
+    ),
     [processedImages]
   );
 
-  const chartData = useMemo(() => 
-    sortedImages.map((img) => ({
+  const chartData = useMemo(() => {
+    return sortedImages.map((img) => ({
+      timestamp: formatTimestamp(img.date, img.time),
+      area: parseFloat(img.area),
       date: img.date,
-      area: img.area
-    })),
-    [sortedImages]
-  );
+      time: img.time
+    }));
+  }, [sortedImages]);
 
   const progress = useMemo(() => {
-    const lastValue = chartData[0]?.area;
-    const firstValue = chartData[chartData.length - 1]?.area;
+    const firstValue = parseFloat(chartData[0]?.area) || 0;
+    const lastValue = parseFloat(chartData[chartData.length - 1]?.area) || 0;
     return firstValue ? Math.round((1 - lastValue / firstValue) * 100) : 0;
   }, [chartData]);
 
-  const latestImage = sortedImages[0];
+  const latestImage = sortedImages[sortedImages.length - 1];
 
   const handleShowDetails = () => {
     setShowGallery(true);
@@ -182,11 +191,36 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
       <CardContent>
         <ChartContainer>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData.reverse()}>
-              <XAxis dataKey="date" />
-              <YAxis />
+            <LineChart 
+              data={chartData}
+              margin={{
+                top: 5,
+                right: 10,
+                left: 10,
+                bottom: 25
+              }}
+            >
+              <XAxis 
+                dataKey="timestamp"
+                angle={-45}
+                textAnchor="end"
+                height={60}
+                interval={0}
+                fontSize={12}
+              />
+              <YAxis 
+                domain={['auto', 'auto']}
+                padding={{ top: 20, bottom: 20 }}
+              />
               <Tooltip />
-              <Line type="monotone" dataKey="area" stroke="#8884d8" />
+              <Line 
+                type="monotone" 
+                dataKey="area" 
+                stroke="#8884d8"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                connectNulls
+              />
             </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
@@ -201,7 +235,7 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
       </CardContent>
       <CardFooter>
         <Timestamp>
-          Last update: {latestImage ? `${latestImage.date} ${latestImage.time}` : 'N/A'}
+          Last update: {latestImage ? formatTimestamp(latestImage.date, latestImage.time) : 'N/A'}
         </Timestamp>
         <Timestamp>
           {latestImage ? `Case ID: ${latestImage.caseId}` : 'N/A'}
@@ -211,8 +245,8 @@ const CaseCard = ({ patientId, images, onDetailClick }) => {
         </DetailButton>
       </CardFooter>
       {showGallery && (
-        <ImageGalleryModal 
-          images={sortedImages} 
+        <ImageGalleryModal
+          images={sortedImages}
           onClose={handleCloseGallery}
         />
       )}

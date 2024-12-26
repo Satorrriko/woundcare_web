@@ -137,7 +137,7 @@ const ImageGalleryModal = ({ images, onClose }) => {
               <ImageInfo>
                 <p>Date: {image.date}</p>
                 <p>Time: {image.time}</p>
-                <p>Area: {image.area}</p>
+                <p>Area: {image.area} mm²</p>
               </ImageInfo>
             </ImageCard>
           ))}

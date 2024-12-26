@@ -1,8 +1,8 @@
 // frontend/src/services/api.js
-const API_BASE_URL = 'http://3.25.71.234:5000/api';
+const API_BASE_URL = '/api';
 
 export const apiService = {
-  // 获取所有患者列表
+  // get all patients
   async getPatients() {
     try {
       const response = await fetch(`${API_BASE_URL}/patients`);
@@ -14,7 +14,7 @@ export const apiService = {
     }
   },
 
-  // 获取特定患者的数据
+  // get patient data by patient ID
   async getPatientData(patientId) {
     try {
       const response = await fetch(`${API_BASE_URL}/patients/${patientId}`);
